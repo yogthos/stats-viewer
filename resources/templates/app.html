@@ -14,9 +14,10 @@
       </div>
     </div>
 
-    <div class="container">
 
-
+    <div class="container" id="app">
+        <!--
+      <h2>Total Hits</h2>
       <div id="total-hits">
         <div class="spinner">
           <div class="bounce1"></div>
@@ -24,7 +25,9 @@
           <div class="bounce3"></div>
         </div>
       </div>
+      <h2>Unique Hits</h2>
       <div id="unique-hits"></div>
+        -->
     </div>
     <!-- scripts and styles -->
     <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css">
@@ -35,8 +38,10 @@
 
     <script src="//code.jquery.com/jquery-2.1.1.min.js" type="text/javascript"></script>
     <script src="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/js/bootstrap.min.js"></script>
-      {% script "/vendor/js/d3.min.js" %}
-    {% script "/vendor/js/c3.min.js" %}
+    {% script "/vendor/js/jquery.flot.js" %}
+    {% script "/vendor/js/jquery.flot.time.js" %}
+    {% script "/vendor/js/jquery.flot.pie.js" %}
+
     <script type="text/javascript">
       var context = "{{servlet-context}}";
     </script>
@@ -49,8 +54,6 @@
       <script src="//cdnjs.cloudflare.com/ajax/libs/react/0.11.0/react.min.js"></script>
       {% script "/js/app.js" %}
     {% endif %}
-    {% block page-scripts %}
-    {% endblock %}
   </body>
 </html>
 

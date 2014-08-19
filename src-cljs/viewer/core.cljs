@@ -1,6 +1,7 @@
 (ns viewer.core
-  (:require [reagent.core :refer [atom]]
-            [ajax.core :as ajax]))
+  (:require [reagent.core :as reagent :refer [atom]]
+            [ajax.core :as ajax])
+  (:require-macros [macros :refer [chart-component]]))
 
 (enable-console-print!)
 
@@ -63,39 +64,65 @@
            :browser (group-by-browser logs)
            :route   (group-by-route logs))))
 
-(defn chart-by-time [logs target label]
-  (.generate js/c3
-    (clj->js {:bindto target
-              :data
-              {:x "x"
-               :x_format "%Y-%m-%d"
-               ;:x_format "%Y-%m-%d %H:%M:%S"
-               :axis {:x {:type "timeseries"
-                          ;:localtime false
-                          :tick {:format "%Y-%m-%d"}
-                          }}
-               :columns
-               [(cons "x" (map #(.toString %) (keys logs)))
-                (cons label (vals logs))]}})))
+(defn millis [d] (.getTime d))
+
+(defn piechart [logs target]
+  (.plot js/$ target
+         (clj->js logs)
+         (clj->js
+          {:series
+           {:pie
+            {:innerRadius 0.4
+             :show true
+             :combine {:color "#999"
+                       :threshold 0.03}
+             :label
+             {:show true}}}})))
+
+(defn timeseries [logs target]
+  (.plot js/$ target
+         (clj->js [(map #(update-in % [0] millis) logs)])
+         (clj->js
+           {:xaxis {:mode "time" :minTickSize [1 "minute"]}
+            :xaxes [{:position "bottom" :axisLabel "Hits"}]
+            :yaxes [{:position "left" :axisLabel "Time"}]})))
+
+(defn chart [div handler]
+     (with-meta
+       (fn [] div)
+       {:component-did-mount
+        (fn [this]
+          (let [node (reagent.core/dom-node this)]
+            (handler (js/$ node))))}))
+
+(defn charts []
+  (if (not-empty @logs)
+    (let [unique-logs (->> @logs (group-by :ip) (map (fn [log] (first (second log)))))]
+      [:div
+       [:h2 "Total Hits: " (count @logs)]
+       [(chart [:div.timeseries] #(timeseries (group-by-time @logs) %))]
+       [:h2 "Unique Hits: " (count unique-logs)]
+       [(chart [:div.timeseries] #(timeseries (group-by-time unique-logs) %))]
+       [:table
+        [:tr [:td [:h2 "Hits by Browser"]] [:td [:h2 "Hits by OS"]]]
+        [:tr [:td [(chart [:div.piechart] #(piechart (group-by-browser unique-logs) %))]]
+             [:td [(chart [:div.piechart] #(piechart (group-by-os unique-logs) %))]]]
+        [:tr [:td {:col-span 2} [:h2 "Hits by Route"]]]
+        [:tr [:td {:col-span 2} [(chart [:div.piechart.os] #(piechart (group-by-route unique-logs) %))]]]]
+
+
+
+       ])
+    [:div.spinner
+     [:div.bounce1]
+     [:div.bounce2]
+     [:div.bounce3]]))
 
 (defn init! []
-  #_(.get js/$
-        "/logs"
-        #(do
-           (reset! logs (js->clj % :keywordize-keys true))
-           (let [unique-logs (->> @logs (group-by :ip) (map (fn [log] (first (second log)))))
-                 hits-by-time (group-by-time @logs)
-                 unique-hits-by-time (group-by-time unique-logs)]
-              (chart-by-time hits-by-time "#total-hits" "total hits")
-              (chart-by-time unique-hits-by-time "#unique-hits" "unique hits"))))
-  (GET "/logs" {:handler
-                #(do
-                   (reset! logs %)
-                   (println (take 3 @logs))
-                   (let [unique-logs (->> @logs (group-by :ip) (map (fn [log] (first (second log)))))
-                         hits-by-time (group-by-time @logs)
-                         unique-hits-by-time (group-by-time unique-logs)]
-                    (chart-by-time hits-by-time "#total-hits" "total hits")
-                    (chart-by-time unique-hits-by-time "#unique-hits" "unique hits")))}))
+  (GET "/logs" {:handler #(reset! logs %)})
+  (reagent/render-component
+    [charts]
+    (.getElementById js/document "app")))
 
 (init!)
+

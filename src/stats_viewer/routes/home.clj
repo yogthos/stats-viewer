@@ -7,7 +7,7 @@
             [stats-viewer.util :as util]))
 
 (defn home-page []
-  (layout/render "home.html"))
+  (layout/render "app.html"))
 
 (defn json [content]
   (content-type "application/json; charset=utf-8"

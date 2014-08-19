@@ -2,8 +2,7 @@ html,
 body {
 	font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
     height: 100%;
-    padding-top: 40px;
-    display: flex;
+    padding-top: 60px;
     align-items: center;
     justify-content: center;
 }
@@ -51,4 +50,45 @@ body {
     transform: scale(1.0);
     -webkit-transform: scale(1.0);
   }
+}
+
+.message {
+    padding-left: 50px;
+}
+#unique {
+    padding-left: 50px;
+    margin-bottom: 25px;
+}
+#total {
+    padding-left: 50px;
+    margin-top: 25px;
+    margin-bottom: 25px;
+}
+.timeseries {
+	align: center;
+	width:900px;
+	height:400px;
+	margin-bottom:50px;
+	clear:both;
+}
+
+.piechart {
+	width: 400px;
+	height: 400px;
+	margin-left: 25px;
+	margin-right: 25px;
+}
+.xaxisLabel {
+    color: #bbb;
+  }
+.yaxisLabel {
+    color: #bbb;
+}
+
+td {
+    text-align:center;
+    vertical-align:middle;
+}
+.os {
+  margin: 0 auto;
 }
