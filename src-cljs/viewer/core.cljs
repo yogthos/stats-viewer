@@ -1,7 +1,6 @@
 (ns viewer.core
   (:require [reagent.core :as reagent :refer [atom]]
-            [ajax.core :as ajax])
-  (:require-macros [macros :refer [chart-component]]))
+            [ajax.core :as ajax]))
 
 (enable-console-print!)
 
@@ -95,6 +94,18 @@
           (let [node (reagent.core/dom-node this)]
             (handler (js/$ node))))}))
 
+(defn rotate-logs [new-logs]
+  (println "got: " (count new-logs))
+  (swap! logs #(into (drop (count new-logs) %) new-logs)))
+
+(declare fetch-logs)
+(defn fetch-logs []
+  (println "fetching...")
+  (when (not-empty @logs)
+    (POST "/logs-after" {:params (select-keys (last @logs) [:access-time])
+                        :handler rotate-logs}))
+  (js/setTimeout #(fetch-logs) 1000))
+
 (defn charts []
   (if (not-empty @logs)
     (let [unique-logs (->> @logs (group-by :ip) (map (fn [log] (first (second log)))))]
@@ -120,6 +131,7 @@
 
 (defn init! []
   (GET "/logs" {:handler #(reset! logs %)})
+  ;(fetch-logs)
   (reagent/render-component
     [charts]
     (.getElementById js/document "app")))

@@ -37,7 +37,7 @@
   (parse-files (sorted-logs path n)))
 
 (defn get-logs-after [access-time]
-  (take-while #(.after (:access-time %) access-time) @logs))
+  (drop-while #(.before (:access-time %) access-time) @logs))
 
 (defn register-events! [dir watch-service opts]
   (.register dir watch-service

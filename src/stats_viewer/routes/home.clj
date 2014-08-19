@@ -16,4 +16,4 @@
 (defroutes home-routes
   (GET "/" [] (home-page))
   (GET "/logs" [] (edn @logs))
-  (POST "/logs-after" [inst] (edn (get-logs-after inst))))
+  (POST "/logs-after" [access-time] (edn (get-logs-after access-time))))
