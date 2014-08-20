@@ -1,7 +1,7 @@
 (ns stats-viewer.middleware
   (:require [taoensso.timbre :as timbre]
             [selmer.parser :as parser]
-            [environ.core :refer [env]]
+            [edn-config.core :refer [env]]
             [selmer.middleware :refer [wrap-error-page]]
             [noir-exception.core
               :refer [wrap-internal-error wrap-exceptions]]))

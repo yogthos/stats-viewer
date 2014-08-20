@@ -5,6 +5,8 @@
 (enable-console-print!)
 
 (def logs (atom {}))
+(def dynamic-logs (clojure.core/atom []))
+(def dynamic-plots (clojure.core/atom []))
 
 (defn GET [url params]
   (ajax/GET (str js/context url) params))
@@ -35,7 +37,9 @@
     :else "other"))
 
 (defn group-by-time [logs]
-  (reduce #(update-in %1 [(:access-time %2)] (fnil inc 0)) (sorted-map) logs))
+  (->> logs
+      (reduce #(update-in %1 [(:access-time %2)] (fnil inc 0)) {})
+      (sort-by #(first %))))
 
 (defn group-by-browser [logs]
   (->> logs (group-by browser-id) (map group-count)))
@@ -53,15 +57,6 @@
 
 (defn group-by-route [logs]
   (map group-count (dissoc (group-by route logs) "other")))
-
-(defn group-logs! [logs]
-  (let [unique-logs (->> logs (group-by :ip) (map #(first (second %))))]
-    (swap! logs assoc
-           :alltime (group-by-time logs)
-           :time    (group-by-time unique-logs)
-           :os      (group-by-os logs)
-           :browser (group-by-browser logs)
-           :route   (group-by-route logs))))
 
 (defn millis [d] (.getTime d))
 
@@ -82,9 +77,30 @@
   (.plot js/$ target
          (clj->js [(map #(update-in % [0] millis) logs)])
          (clj->js
-           {:xaxis {:mode "time" :minTickSize [1 "minute"]}
+           {:colors ["#0000ff"]
+            :series {:shadowSize 0}
+            :xaxis {:mode "time" :minTickSize [1 "minute"]}
             :xaxes [{:position "bottom" :axisLabel "Hits"}]
             :yaxes [{:position "left" :axisLabel "Time"}]})))
+
+(defn dynamic-timeseries [logs target]
+  (swap! dynamic-plots conj (timeseries logs target)))
+
+(defn rotate-logs [new-logs]
+  (when (not-empty new-logs)
+    (println "new logs:" (count new-logs)))
+  (when (not-empty new-logs)
+    (let [grouped-logs (group-by-time new-logs)]
+      (swap! dynamic-logs #(concat (drop (count grouped-logs) %) grouped-logs))
+      (doseq [plot @dynamic-plots]
+      (.setData plot [@dynamic-logs])))))
+
+(declare fetch-logs)
+(defn fetch-logs []
+  (when (not-empty @dynamic-logs)
+    (POST "/logs-after" {:params {:access-time (first (last @dynamic-logs))}
+                         :handler rotate-logs}))
+  (js/setTimeout #(fetch-logs) 1000))
 
 (defn chart [div handler]
      (with-meta
@@ -94,36 +110,25 @@
           (let [node (reagent.core/dom-node this)]
             (handler (js/$ node))))}))
 
-(defn rotate-logs [new-logs]
-  (println "got: " (count new-logs))
-  (swap! logs #(into (drop (count new-logs) %) new-logs)))
-
-(declare fetch-logs)
-(defn fetch-logs []
-  (println "fetching...")
-  (when (not-empty @logs)
-    (POST "/logs-after" {:params (select-keys (last @logs) [:access-time])
-                        :handler rotate-logs}))
-  (js/setTimeout #(fetch-logs) 1000))
-
 (defn charts []
   (if (not-empty @logs)
-    (let [unique-logs (->> @logs (group-by :ip) (map (fn [log] (first (second log)))))]
+    (let [unique-logs (->> @logs (group-by :ip) (map (fn [log] (first (second log)))))
+          logs-by-time (group-by-time @logs)]
+      (reset! dynamic-logs logs-by-time)
+      (println "first:" (first @dynamic-logs))
+      (println "last:" (last @dynamic-logs))
+      (fetch-logs)
       [:div
        [:h2 "Total Hits: " (count @logs)]
-       [(chart [:div.timeseries] #(timeseries (group-by-time @logs) %))]
+       [(chart [:div.timeseries] #(dynamic-timeseries logs-by-time %))]
        [:h2 "Unique Hits: " (count unique-logs)]
-       [(chart [:div.timeseries] #(timeseries (group-by-time unique-logs) %))]
+       [(chart [:div.timeseries] #(dynamic-timeseries (group-by-time unique-logs) %))]
        [:table
         [:tr [:td [:h2 "Hits by Browser"]] [:td [:h2 "Hits by OS"]]]
         [:tr [:td [(chart [:div.piechart] #(piechart (group-by-browser unique-logs) %))]]
              [:td [(chart [:div.piechart] #(piechart (group-by-os unique-logs) %))]]]
         [:tr [:td {:col-span 2} [:h2 "Hits by Route"]]]
-        [:tr [:td {:col-span 2} [(chart [:div.piechart.os] #(piechart (group-by-route unique-logs) %))]]]]
-
-
-
-       ])
+        [:tr [:td {:col-span 2} [(chart [:div.piechart.os] #(piechart (group-by-route unique-logs) %))]]]]])
     [:div.spinner
      [:div.bounce1]
      [:div.bounce2]
@@ -131,7 +136,6 @@
 
 (defn init! []
   (GET "/logs" {:handler #(reset! logs %)})
-  ;(fetch-logs)
   (reagent/render-component
     [charts]
     (.getElementById js/document "app")))

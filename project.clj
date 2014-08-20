@@ -8,9 +8,9 @@
                  [com.taoensso/timbre "3.2.1"]
                  [com.taoensso/tower "2.0.2"]
                  [markdown-clj "0.9.47"]
-                 [environ "0.5.0"]
                  [im.chit/cronj "1.0.1"]
                  [noir-exception "0.2.2"]
+                 [edn-config "0.1"]
                  [org.clojure/clojurescript "0.0-2280"]
                  [cljs-ajax "0.2.6"]
                  [reagent "0.4.2"]]
@@ -46,12 +46,14 @@
 
   :profiles
   {:uberjar {:aot :all}
-   :production {:ring {:open-browser? false
+   :production {:resource-paths ["config/prod"]
+                :ring {:open-browser? false
                        :stacktraces?  false
                        :auto-reload?  false}}
    :dev {:dependencies [[ring-mock "0.1.5"]
                         [ring/ring-devel "1.3.0"]
                         [pjstadig/humane-test-output "0.6.0"]]
+         :resource-paths ["config/dev"]
          :injections [(require 'pjstadig.humane-test-output)
                       (pjstadig.humane-test-output/activate!)]
          :env {:dev true}}}

@@ -10,7 +10,7 @@
             [taoensso.timbre :as timbre]
             [taoensso.timbre.appenders.rotor :as rotor]
             [selmer.parser :as parser]
-            [environ.core :refer [env]]
+            [edn-config.core :refer [env]]
             [cronj.core :as cronj]))
 
 (def reader (atom nil))

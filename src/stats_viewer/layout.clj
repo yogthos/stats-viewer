@@ -3,7 +3,7 @@
             [clojure.string :as s]
             [ring.util.response :refer [content-type response]]
             [compojure.response :refer [Renderable]]
-            [environ.core :refer [env]]))
+            [edn-config.core :refer [env]]))
 
 (def template-path "templates/")
 
