@@ -40,7 +40,7 @@
     {:path "stats_viewer.log" :max-size (* 512 1024) :backlog 10})
 
   (if (env :dev) (parser/cache-off!))
-  (reset! reader (log-reader/start!))
+  ;(reset! reader (log-reader/start!))
   ;;start the expired session cleanup job
   (cronj/start! session-manager/cleanup-job)
   (timbre/info "stats-viewer started successfully"))
@@ -51,7 +51,7 @@
   []
   (timbre/info "stats-viewer is shutting down...")
   (cronj/shutdown! session-manager/cleanup-job)
-  (log-reader/stop! reader)
+  ;(log-reader/stop! reader)
   (timbre/info "shutdown complete!"))
 
 (def app (app-handler

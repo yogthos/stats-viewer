@@ -38,8 +38,7 @@
 
 (defn group-by-time [logs]
   (->> logs
-      (reduce #(update-in %1 [(:access-time %2)] (fnil inc 0)) {})
-      (sort-by #(first %))))
+      (reduce #(update-in %1 [(:access-time %2)] (fnil inc 0)) (sorted-map))))
 
 (defn group-by-browser [logs]
   (->> logs (group-by browser-id) (map group-count)))
@@ -113,16 +112,17 @@
 (defn charts []
   (if (not-empty @logs)
     (let [unique-logs (->> @logs (group-by :ip) (map (fn [log] (first (second log)))))
-          logs-by-time (group-by-time @logs)]
+          logs-by-time (group-by-time @logs)
+          unique-logs-by-time (group-by-time unique-logs)]
       (reset! dynamic-logs logs-by-time)
       ;(println "first:" (first @dynamic-logs))
       ;(println "last:" (last @dynamic-logs))
-      (fetch-logs)
+      ;(fetch-logs)
       [:div
        [:h2 "Total Hits: " (count @logs)]
-       [(chart [:div.timeseries] #(dynamic-timeseries logs-by-time %))]
+       [(chart [:div.timeseries] #(timeseries logs-by-time %))]
        [:h2 "Unique Hits: " (count unique-logs)]
-       [(chart [:div.timeseries] #(dynamic-timeseries (group-by-time unique-logs) %))]
+       [(chart [:div.timeseries] #(timeseries unique-logs-by-time %))]
        [:table
         [:tr [:td [:h2 "Hits by Browser"]] [:td [:h2 "Hits by OS"]]]
         [:tr [:td [(chart [:div.piechart] #(piechart (group-by-browser unique-logs) %))]]

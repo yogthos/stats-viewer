@@ -99,7 +99,7 @@
 (defn line-handler [state]
   (when-let [log (try (-> (:reader @state) (.readLine) (parse-log))
                   (catch Exception _))]
-    (when (:access-time log)
+    (when (and (:access-time log) (not= "/stats-viewer/logs-after" (:route log)))
       (swap! logs #(cons log (rest %))))))
 
 (defn start! []
@@ -117,6 +117,9 @@
     state))
 
 (def watcher (atom nil))
+
+(reset! logs (get-logs (env :log-path) 3))
+
 ;(reset! watcher (start!))
 ;; todo try channels
 ;put the loop in the channel instead of using a thread
