@@ -41,12 +41,16 @@
      :optimizations :advanced
      :pretty-print false
      :output-wrapper false
-     :externs ["externs/vendor.js"]
+     :externs ["externs/vendor.js"
+               "externs/jquery.js"]
      :closure-warnings {:non-standard-jsdoc :off}}}]}
 
+  :javac-target "1.7"
   :profiles
   {:uberjar {:aot :all}
+   :uberwar {:javac-options ["-target" "1.7" "-source" "1.7" "-Xlint:-options"]}
    :production {:resource-paths ["config/prod"]
+                :aot :all
                 :ring {:open-browser? false
                        :stacktraces?  false
                        :auto-reload?  false}}

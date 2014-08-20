@@ -21,24 +21,27 @@
 (defn parse-log [line]
   (merge
     {:ip (re-find #"\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b" line)
-     :access-time (.parse (SimpleDateFormat. "dd/MMM/yyyy:HH:mm:ss zzzzz")
-                          (second (re-find #"\[(.*?)\]" line)))}
+     :access-time (try
+                    (.parse (SimpleDateFormat. "dd/MMM/yyyy:HH:mm:ss zzzzz")
+                            (second (re-find #"\[(.*?)\]" line)))
+                    (catch Exception _))}
     (into {} (map vector [:route :path :browser] (re-seq #"\".*?\"" line)))))
 
 (defn sorted-logs [path limit]
-  (take-last limit (->> path file file-seq rest (sort-by (memfn lastModified)))))
+  (println "loading logs from" path)
+  (when-let [logs (not-empty (->> path file file-seq rest))]
+    (take-last limit (sort-by (memfn lastModified) logs))))
 
 (defn parse-files [files]
   (mapcat
     #(with-open [rdr (reader %)]
-       (doall (->> rdr line-seq (map parse-log))))
+       (doall (->> rdr line-seq (map parse-log) (filter :access-time))))
     files))
 
 (defn get-logs [path n]
   (parse-files (sorted-logs path n)))
 
 (defn get-logs-after [access-time]
-  ;(println (:access-time (first @logs))"\n" (:access-time (last @logs)) "\n" access-time)
   (when access-time
     (take-while #(.after (:access-time %) access-time) @logs)))
 
@@ -96,11 +99,11 @@
 (defn line-handler [state]
   (when-let [log (try (-> (:reader @state) (.readLine) (parse-log))
                   (catch Exception _))]
-    (println "got new line" log)
-    (swap! logs #(cons log (rest %)))))
+    (when (:access-time log)
+      (swap! logs #(cons log (rest %))))))
 
 (defn start! []
-  (reset! logs (get-logs (env :log-path) 3))
+  (reset! logs (get-logs (env :log-path) 2))
   (let [state (atom {})]
     (set-reader! state (.getName (first (sorted-logs (env :log-path) 1))))
     (.seek (:reader @state) (.length (:reader @state)))

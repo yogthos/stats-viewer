@@ -87,7 +87,7 @@
   (swap! dynamic-plots conj (timeseries logs target)))
 
 (defn rotate-logs [new-logs]
-  (when (not-empty new-logs)
+  #_(when (not-empty new-logs)
     (println "new logs:" (count new-logs)))
   (when (not-empty new-logs)
     (let [grouped-logs (group-by-time new-logs)]
@@ -115,8 +115,8 @@
     (let [unique-logs (->> @logs (group-by :ip) (map (fn [log] (first (second log)))))
           logs-by-time (group-by-time @logs)]
       (reset! dynamic-logs logs-by-time)
-      (println "first:" (first @dynamic-logs))
-      (println "last:" (last @dynamic-logs))
+      ;(println "first:" (first @dynamic-logs))
+      ;(println "last:" (last @dynamic-logs))
       (fetch-logs)
       [:div
        [:h2 "Total Hits: " (count @logs)]
